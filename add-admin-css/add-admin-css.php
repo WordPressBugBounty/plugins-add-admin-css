@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Add Admin CSS
- * Version:     2.5
+ * Version:     2.5.1
  * Plugin URI:  https://coffee2code.com/wp-plugins/add-admin-css/
  * Author:      Scott Reilly
  * Author URI:  https://coffee2code.com/
@@ -10,7 +10,7 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Description: Easily define additional CSS (inline and/or by URL) to be added to all administration pages.
  *
- * Compatible with WordPress 5.5+ through 6.8+, and PHP through at least 8.3+.
+ * Compatible with WordPress 5.5+ through 6.9+, and PHP through at least 8.3+.
  *
  * =>> Read the accompanying readme.txt file for instructions and documentation.
  * =>> Also, visit the plugin's homepage for additional information and updates.
@@ -18,7 +18,7 @@
  *
  * @package Add_Admin_CSS
  * @author  Scott Reilly
- * @version 2.5
+ * @version 2.5.1
  **/
 
 /*
@@ -103,7 +103,7 @@ final class c2c_AddAdminCSS extends c2c_Plugin_068 {
 	 * Constructor.
 	 */
 	protected function __construct() {
-		parent::__construct( '2.5', 'add-admin-css', 'c2c', __FILE__, array( 'settings_page' => 'themes' ) );
+		parent::__construct( '2.5.1', 'add-admin-css', 'c2c', __FILE__, array( 'settings_page' => 'themes' ) );
 		register_activation_hook( __FILE__, array( __CLASS__, 'activation' ) );
 
 		return self::$instance = $this;
@@ -618,13 +618,20 @@ HTML;
 		 *
 		 * @since 1.0
 		 *
-		 * @param string $files CSS code (without `<style>` tag).
+		 * @param string $files CSS styles (without `<style>` tag).
 		 */
 		$css = trim( apply_filters( 'c2c_add_admin_css', $css ) );
 
-		if ( $css ) {
+		if ( $css && is_string( $css ) ) {
+			// Encode '<' to prevent tag injection.
+			$sanitized_css = str_replace( '<', '&lt;', wp_check_invalid_utf8( $css ) );
+			// Allow use of '<' in comparators.
+			$sanitized_css = str_replace( '&lt; ', '< ', $sanitized_css );
+			$sanitized_css = str_replace( '&lt;= ', '<= ', $sanitized_css );
+
 			echo "<style>\n";
-			echo esc_html( $css ) . "\n";
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Sanitized above.
+			echo $sanitized_css . "\n";
 			echo "</style>\n";
 		}
 	}
